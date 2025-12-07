@@ -56,27 +56,48 @@ A high-performance, cross-platform terminal GPS app featuring real-time tracking
 
 **Linux & macOS:**
 ```bash
+# Install & Run
 git clone https://github.com/Aditya-Giri-4356/termgps.git
 cd termgps
-
-# Create & activate a virtual environment (Recommended):
 python3 -m venv venv
 source venv/bin/activate
-
-# Install & Run:
 pip install -e .
 termgps
 ```
 
 **Windows:**
 ```powershell
+# Install & Run
 git clone https://github.com/Aditya-Giri-4356/termgps.git
 cd termgps
 pip install -e .
-
-# Run directly (Recommended if 'termgps' command not found):
 python -m src.termgps.app
 ```
+
+---
+
+### ⚡ Make it Permanent (Run from Anywhere)
+
+Don't want to navigate to the folder every time? Run these commands **once** to create a lasting shortcut.
+
+**macOS / Linux (Bash/Zsh):**
+```bash
+# Add alias to your shell profile
+echo "alias termgps='$(pwd)/venv/bin/termgps'" >> ~/.zshrc  # or ~/.bashrc
+source ~/.zshrc
+```
+*Now you can just type `termgps` in any new terminal!*
+
+**Windows (PowerShell):**
+```powershell
+# Create a permanent function
+$path = (Get-Item .).FullName
+echo "function termgps { python -m src.termgps.app }" >> $PROFILE
+echo "termgps command added!"
+```
+*Restart PowerShell and type `termgps` to run!*
+
+---
 
 ### Optional: Real GPS (macOS Only)
 For native GPS support on macOS:
