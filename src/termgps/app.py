@@ -235,12 +235,33 @@ class InfoPanel(Static):
     def render(self):
         t = THEMES[theme]; txt = Text()
         txt.append("─── INFO ───\n", style=Style(color=t["hl"], bold=True))
-        if self.lat: txt.append(f" GPS: {self.lat:.4f}, {self.lon:.4f} ({self.acc})\n", style=Style(color=t["fg"]))
-        else: txt.append(" GPS: Press 'r'\n", style=Style(dim=True))
+        
+        # Calculate signal bars based on accuracy
+        bars = "     "
+        color = "red"
+        if self.lat:
+            try:
+                # Parse "±10m" or "~10km"
+                acc_val = float(''.join(c for c in self.acc if c.isdigit() or c == '.'))
+                if 'km' in self.acc: acc_val *= 1000
+                
+                if acc_val <= 20: bars = "▂▃▅▆▇"; color = "green"
+                elif acc_val <= 100: bars = "▂▃▅▆ "; color = "yellow"
+                elif acc_val <= 500: bars = "▂▃▅  "; color = "yellow"
+                else: bars = "▂    "; color = "red"
+            except: bars = "▂    "; color = "red"
+            
+            txt.append(f" SIG: ", style=Style(color=t["fg"]))
+            txt.append(f"{bars}", style=Style(color=color))
+            txt.append(f" ({self.acc})\n", style=Style(color=t["fg"], dim=True))
+            txt.append(f" LOC: {self.lat:.4f}, {self.lon:.4f}\n", style=Style(color=t["fg"]))
+        else:
+            txt.append(" GPS: Press 'r' to connect\n", style=Style(dim=True))
+            
         if self.dest:
             txt.append(f" TO: {self.dest[:20]}\n", style=Style(color=t["fg"]))
             txt.append(f" {fmt_d(self.dist)} | {fmt_t(self.time)}\n", style=Style(color=t["hl"]))
-        if self.tracking: txt.append(" 🔄 TRACKING\n", style=Style(color=t["hl"], bold=True))
+        if self.tracking: txt.append(" 🔄 TRACKING ACTIVE\n", style=Style(color=t["hl"], bold=True))
         return txt
 
 class ThemePanel(Static):
