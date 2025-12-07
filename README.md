@@ -54,19 +54,25 @@ A high-performance, cross-platform terminal GPS app featuring real-time tracking
 
 ### Quick Install
 
+**Linux & macOS:**
 ```bash
-# Clone the repository
 git clone https://github.com/Aditya-Giri-4356/termgps.git
 cd termgps
-
-# Install
 pip install -e .
-
-# Run
 termgps
 ```
 
-### Optional: Real GPS (macOS)
+**Windows:**
+```powershell
+git clone https://github.com/Aditya-Giri-4356/termgps.git
+cd termgps
+pip install -e .
+
+# Run directly (Recommended if 'termgps' command not found):
+python -m src.termgps.app
+```
+
+### Optional: Real GPS (macOS Only)
 For native GPS support on macOS:
 ```bash
 pip install pyobjc-framework-CoreLocation
