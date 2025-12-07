@@ -247,8 +247,7 @@ class ThemePanel(Static):
     def render(self):
         t = THEMES[theme]; txt = Text()
         txt.append("─── THEME ───\n", style=Style(color=t["hl"], bold=True))
-        txt.append(f" {t['name']}\n", style=Style(color=t["fg"]))
-        txt.append(" Press 't' then ⬅/➡\n", style=Style(color=t["fg"], dim=True))
+        txt.append(f" [{theme}] 1-4 to change\n", style=Style(color=t["fg"]))
         return txt
 
 class Sugs(Static):
@@ -278,17 +277,16 @@ class TermGPS(App):
     
     BINDINGS = [
         Binding("q","quit","Quit"), Binding("d","search","Dest"), Binding("r","gps","GPS"),
-        Binding("x","track","Track"), Binding("c","clear","Clear"), Binding("n","next","Next"), Binding("p","prev","Prev"),
-        Binding("t","theme_mode","Theme Mode"),
+        Binding("t","track","Track"), Binding("c","clear","Clear"), Binding("n","next","Next"), Binding("p","prev","Prev"),
+        Binding("1","t1"), Binding("2","t2"), Binding("3","t3"), Binding("4","t4"),
         Binding("escape","cancel",show=False), Binding("enter","confirm",show=False),
         Binding("up","up",show=False), Binding("down","down",show=False),
-        Binding("left","left",show=False), Binding("right","right",show=False),
     ]
     
     def __init__(self):
         super().__init__()
         self.lat=self.lon=None; self.route=None; self.dest=None; self.cur=0
-        self.tracking=False; self._sa=False; self._q=""; self._timer=None; self.theme_mode=False
+        self.tracking=False; self._sa=False; self._q=""; self._timer=None
     
     def compose(self):
         yield Header()
@@ -386,24 +384,10 @@ class TermGPS(App):
     def action_prev(self):
         if self.cur > 0: self.cur -= 1; self._refresh()
     
-    def action_theme_mode(self):
-        self.theme_mode = not self.theme_mode
-        if self.theme_mode: self.notify("🎨 Theme Mode: Use ⬅/➡")
-        else: self.notify("Theme Mode OFF")
-    
-    def action_left(self):
-        global theme, theme_idx
-        if self.theme_mode:
-            theme_idx = (theme_idx - 1) % len(THEMES_LIST)
-            theme = THEMES_LIST[theme_idx]
-            self._refresh(); self.notify(f"Theme: {THEMES[theme]['name']}")
-    
-    def action_right(self):
-        global theme, theme_idx
-        if self.theme_mode:
-            theme_idx = (theme_idx + 1) % len(THEMES_LIST)
-            theme = THEMES_LIST[theme_idx]
-            self._refresh(); self.notify(f"Theme: {THEMES[theme]['name']}")
+    def action_t1(self): global theme; theme = "matrix"; self._refresh(); self.notify("Matrix")
+    def action_t2(self): global theme; theme = "dracula"; self._refresh(); self.notify("Dracula")
+    def action_t3(self): global theme; theme = "monokai"; self._refresh(); self.notify("Monokai")
+    def action_t4(self): global theme; theme = "nord"; self._refresh(); self.notify("Nord")
     
     def action_up(self):
         if self._sa and self.sugs.items: self.sugs.sel = (self.sugs.sel-1) % len(self.sugs.items); self.sugs.refresh()

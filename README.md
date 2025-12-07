@@ -18,7 +18,8 @@ A cross-platform terminal navigation app with radar display, route visualization
 - 🔵 **Route Visualization** - Blue route line from start to destination
 - 🔴 **Direction Arrow** - Points from your location toward destination
 - 🔄 **Live Tracking** - Auto-updates GPS every 5 seconds
-- 🎨 **4 Themes** - Matrix, Dark, Ocean, Sunset
+- 🎨 **Programmer-Focused Themes** - VS Code, GitHub, One Dark, Solarized, Monokai Pro, Night Owl
+- 🎛️ **Easy Theme Switching** - Press `T` to enter theme mode, then use `←`/`→` to cycle
 - 🇮🇳 **India Optimized** - Built-in Indian cities, Tamil Nadu focus
 
 ---
@@ -97,12 +98,12 @@ pip install pyobjc-framework-CoreLocation
 | Key | Action |
 |-----|--------|
 | `r` | Get GPS location |
-| `t` | Toggle live tracking (every 5s) |
+| `x` | Toggle live tracking (every 5s) |
 | `d` | Search destination |
 | `n` | Next navigation step |
 | `p` | Previous navigation step |
 | `c` | Clear route |
-| `1-4` | Change theme |
+| `t` | Enter/Exit Theme Mode (use ⬅️/➡️ to change) |
 | `q` | Quit |
 
 | Mouse | Action |
@@ -111,16 +112,22 @@ pip install pyobjc-framework-CoreLocation
 
 ---
 
-## 🎨 Themes
+## 🎨 Themes (Programmer Focused)
 
-Press `1`, `2`, `3`, or `4` to switch:
+Press `t` to enter theme mode, then use Arrow Keys to switch:
 
-| Key | Theme | Style |
-|-----|-------|-------|
-| `1` | Matrix | Green on black |
-| `2` | Dark | Cyan/white on dark |
-| `3` | Ocean | Blue tones |
-| `4` | Sunset | Orange/gold |
+- **Matrix** (Green/Black) - The classic hacker vibe.
+- **Dracula** (Pink/Purple) - Popular IDE theme.
+- **Monokai** (Yellow/Pink) - Vibrant and high contrast.
+- **Nord** (Ice Blue) - Cool and easy on the eyes.
+- **Gruvbox** (Retro) - Warm, reddish-brown tones.
+- **Solarized** (Cyan/Yellow) - Precision colors.
+
+---
+
+## 🤝 Contributions
+
+**Extra features are always appreciated!** If you have an idea or improvement, feel free to open a pull request or issue. We love seeing community creativity. 🚀
 
 ---
 
@@ -192,7 +199,11 @@ python -m src.termgps.app
 
 ---
 
-## 📄 License
+## 🤝 Contributing
+
+Contributions are always welcome! If you have any ideas, suggestions, or bug reports, please open an issue or submit a pull request. Extra features and improvements are always appreciated!
+
+## 📝 License
 
 MIT License - see [LICENSE](LICENSE)
 
