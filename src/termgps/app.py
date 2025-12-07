@@ -311,7 +311,10 @@ class RadarWidget(Static):
     def render(self) -> Text:
         text = Text()
         w, h = self._width, self._height
+        
+        # Use two buffers: one for characters, one for colors
         buffer = [[' ' for _ in range(w)] for _ in range(h)]
+        colors = [['green' for _ in range(w)] for _ in range(h)]
         
         # Center position (with pan offset)
         cx = w // 2 + self.pan_x
@@ -319,67 +322,80 @@ class RadarWidget(Static):
         cx = max(3, min(w - 3, cx))
         cy = max(2, min(h - 2, cy))
         
-        # Draw route path if available
+        # Draw route path in BLUE if available
         if self.route_points and self.my_lat and self.my_lon:
             prev_x, prev_y = None, None
             for i, (lon, lat) in enumerate(self.route_points):
                 x, y = self._latlon_to_screen(lat, lon, self.my_lat, self.my_lon)
                 
-                # Draw route point
+                # Draw route point in BLUE
                 if 0 <= x < w and 0 <= y < h:
-                    # Use different characters for the route
                     if i == 0:
                         buffer[y][x] = '●'  # Start
+                        colors[y][x] = 'cyan'
                     elif i == len(self.route_points) - 1:
                         buffer[y][x] = '◆'  # End (destination)
+                        colors[y][x] = 'red'
                     else:
-                        buffer[y][x] = '·'  # Route path
+                        buffer[y][x] = '━'  # Route path (thick line)
+                        colors[y][x] = 'blue'
                 
-                # Draw line between points
+                # Draw line between points in BLUE
                 if prev_x is not None and prev_y is not None:
-                    self._draw_line(buffer, prev_x, prev_y, x, y, '·')
+                    self._draw_line_colored(buffer, colors, prev_x, prev_y, x, y, '─', 'blue')
                 
                 prev_x, prev_y = x, y
         
-        # Draw range circles around my position
+        # Draw range circles around my position (green)
         for radius in [4, 8, 12]:
             for angle in range(0, 360, 10):
                 x = int(cx + radius * math.cos(math.radians(angle)))
                 y = int(cy - radius * math.sin(math.radians(angle)) * 0.5)
                 if 0 <= x < w and 0 <= y < h and buffer[y][x] == ' ':
                     buffer[y][x] = '·'
+                    colors[y][x] = 'green'
         
-        # Draw crosshairs
+        # Draw crosshairs (green)
         for x in range(w):
             if 0 <= cy < h and buffer[cy][x] == ' ':
                 buffer[cy][x] = '─'
+                colors[cy][x] = 'green'
         for y in range(h):
             if 0 <= cx < w and buffer[y][cx] == ' ':
                 buffer[y][cx] = '│'
+                colors[y][cx] = 'green'
         if 0 <= cx < w and 0 <= cy < h:
             buffer[cy][cx] = '╋'
+            colors[cy][cx] = 'white'
         
-        # Draw compass points
+        # Draw compass points (white)
         if 0 <= cx < w:
-            if cy > 0: buffer[0][cx] = 'N'
-            if cy < h - 1: buffer[h - 1][cx] = 'S'
+            if cy > 0:
+                buffer[0][cx] = 'N'
+                colors[0][cx] = 'white'
+            if cy < h - 1:
+                buffer[h - 1][cx] = 'S'
+                colors[h-1][cx] = 'white'
         if 0 <= cy < h:
             buffer[cy][0] = 'W'
+            colors[cy][0] = 'white'
             buffer[cy][w - 1] = 'E'
+            colors[cy][w-1] = 'white'
         
-        # Draw "YOU" label
+        # Draw "YOU" label (yellow)
         if self.my_lat is not None:
             label = " ◉ YOU"
             for i, c in enumerate(label):
                 if 0 <= cx + 2 + i < w and 0 <= cy < h:
                     buffer[cy][cx + 2 + i] = c
+                    colors[cy][cx + 2 + i] = 'yellow'
         
         # Draw destination marker and arrow
         if self.dest_lat and self.dest_lon and self.my_lat and self.my_lon:
             bearing = calculate_bearing(self.my_lat, self.my_lon, self.dest_lat, self.dest_lon)
             distance = haversine_distance(self.my_lat, self.my_lon, self.dest_lat, self.dest_lon)
             
-            # Draw arrow indicating direction
+            # Draw arrow indicating direction (red)
             arrow_len = min(6, min(cx, w - cx, cy, h - cy) - 2)
             if arrow_len > 2:
                 angle_rad = math.radians(bearing)
@@ -390,8 +406,9 @@ class RadarWidget(Static):
                 arrow_char = arrows[int((bearing + 22.5) / 45) % 8]
                 if 0 <= end_x < w and 0 <= end_y < h:
                     buffer[end_y][end_x] = arrow_char
+                    colors[end_y][end_x] = 'red'
                 
-                # Destination label
+                # Destination label (white)
                 dist_str = f"{distance:.1f}km" if distance >= 1 else f"{int(distance * 1000)}m"
                 label = f" {self.dest_name[:8]} ({dist_str})"
                 label_x = min(end_x + 1, w - len(label))
@@ -399,19 +416,54 @@ class RadarWidget(Static):
                     for i, c in enumerate(label):
                         if 0 <= label_x + i < w:
                             buffer[end_y][label_x + i] = c
+                            colors[end_y][label_x + i] = 'white'
         
-        # Route indicator
+        # Route indicator (cyan)
         if self.route_points:
-            label = f"📍 Route: {len(self.route_points)} points"
+            label = f"🛣️  Route: {len(self.route_points)} pts"
             for i, c in enumerate(label):
                 if 0 <= i < w and 0 <= 1 < h:
                     buffer[1][i] = c
+                    colors[1][i] = 'cyan'
         
-        # Convert to Rich Text
-        for row in buffer:
-            text.append(''.join(row) + '\n', style=Style(color="green"))
+        # Convert to Rich Text with colors
+        for y, row in enumerate(buffer):
+            for x, char in enumerate(row):
+                text.append(char, style=Style(color=colors[y][x]))
+            text.append('\n')
         
         return text
+    
+    def _draw_line_colored(self, buffer: List[List[str]], colors: List[List[str]], 
+                           x1: int, y1: int, x2: int, y2: int, char: str, color: str) -> None:
+        """Draw a colored line between two points."""
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        sx = 1 if x1 < x2 else -1
+        sy = 1 if y1 < y2 else -1
+        err = dx - dy
+        
+        w, h = len(buffer[0]), len(buffer)
+        steps = 0
+        max_steps = max(dx, dy) + 1
+        
+        while steps < max_steps:
+            if 0 <= x1 < w and 0 <= y1 < h and buffer[y1][x1] == ' ':
+                buffer[y1][x1] = char
+                colors[y1][x1] = color
+            
+            if x1 == x2 and y1 == y2:
+                break
+            
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x1 += sx
+            if e2 < dx:
+                err += dx
+                y1 += sy
+            
+            steps += 1
     
     def _draw_line(self, buffer: List[List[str]], x1: int, y1: int, x2: int, y2: int, char: str) -> None:
         """Draw a line between two points using Bresenham's algorithm."""
