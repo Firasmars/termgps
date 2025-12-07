@@ -1,104 +1,70 @@
 # TermGPS 🧭
 
-A terminal-based GPS navigation app with **turn-by-turn directions** and radar display.
+Cross-platform terminal GPS navigation with turn-by-turn directions.
 
-![Python](https://img.shields.io/badge/python-3.9+-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+**Works on:** Windows, macOS, Linux
 
 ## Features
 
-- 📍 **Real GPS Location** - Uses macOS Location Services
-- 🗺️ **Turn-by-Turn Navigation** - Actual road paths like Google Maps
+- 📍 **Location Detection** - GPS or IP-based (works everywhere)
+- 🗺️ **Turn-by-Turn Routing** - Real road directions via OSRM
 - 🧭 **Radar Display** - Visual compass with route overlay
-- 📏 **Distance & ETA** - Real-time route information
-- 🔄 **Step-by-Step Directions** - Navigate through each turn
-- 🔔 **Arrival Detection** - Notifies when you reach destination
-
-## Screenshot
-
-```
-                        N
-                        │
-              ·  ·   ·  │  ·   ·  ·
-             ·    ·····│·····    ·
-            ·  ·····   │   ·····  ·
-    W───────────●──────╋◉YOU────────────E
-            ·         ·│·         ·
-             ·    ◆···•│         ·
-              ·  Dest  │  ·   ·  ·
-                        │
-                        S
-
-┌─ DIRECTIONS ──────────────────────────────────────────┐
-│ ➡️ Mathura Road                                  2.1km │
-│   ⬆️ NH 44                                       45.2km │
-│   ⬅️ Fatehabad Road                              3.5km │
-│ Step 1/12                  [n]ext [p]revious          │
-└───────────────────────────────────────────────────────┘
-
-┌─ NAVIGATION ──────────────────────────────────────────┐
-│ 📍 GPS: Excellent (±5m)                               │
-│ YOUR LOCATION: 28.61390, 77.20900                     │
-│ DESTINATION: Taj Mahal                                │
-│ DISTANCE: 233.5 km  |  ETA: 3h 45m                    │
-└───────────────────────────────────────────────────────┘
-```
+- 🔵 **Blue Route Line** - Clear path visualization
+- 🇮🇳 **India Optimized** - Built-in Indian cities
 
 ## Installation
 
 ```bash
-# Clone
+pip install textual rich requests
+
+# Clone and run
 git clone https://github.com/Aditya-Giri-4356/termgps.git
 cd termgps
+python -m src.termgps.app
+```
 
-# Setup
-python -m venv venv
-source venv/bin/activate
-pip install -e .
+### Optional: Platform GPS
 
-# For real GPS (macOS)
+```bash
+# macOS (for real GPS)
 pip install pyobjc-framework-CoreLocation
+
+# Windows (for real GPS)
+pip install winrt-Windows.Devices.Geolocation
+
+# Linux (requires gpsd running)
+pip install gps
 ```
 
 ## Usage
 
 ```bash
-python -m termgps.app
+python -m src.termgps.app
 ```
 
 ### Controls
 
 | Key | Action |
 |-----|--------|
-| `r` | **Get GPS location** |
-| `d` | **Search destination** |
-| `n` | Next direction step |
-| `p` | Previous direction step |
+| `r` | Get location |
+| `d` | Search destination |
+| `n/p` | Next/Prev direction |
 | `c` | Clear route |
-| Mouse drag | Pan radar view |
 | `q` | Quit |
+| Mouse | Drag to pan |
 
 ## How It Works
 
-1. Press `r` to get your GPS location
+1. Press `r` to get your location
 2. Press `d` and search for a destination
-3. Route is calculated automatically using **OSRM** (OpenStreetMap routing)
-4. Follow turn-by-turn directions with `n`/`p` keys
-
-## Route API
-
-Uses **OSRM (Open Source Routing Machine)** - free, no API key required.
-- Same road data as OpenStreetMap
-- Accurate driving directions
-- Distance and time estimates
+3. Follow the blue route and directions
 
 ## Requirements
 
 - Python 3.9+
-- macOS (for GPS)
-- textual, rich, requests, geocoder
+- textual, rich, requests (auto-installed)
+- Internet connection (for routing)
 
 ## License
 
-MIT
+MIT - Aditya Giri
