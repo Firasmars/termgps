@@ -58,6 +58,12 @@ A high-performance, cross-platform terminal GPS app featuring real-time tracking
 ```bash
 git clone https://github.com/Aditya-Giri-4356/termgps.git
 cd termgps
+
+# Create & activate a virtual environment (Recommended):
+python3 -m venv venv
+source venv/bin/activate
+
+# Install & Run:
 pip install -e .
 termgps
 ```
