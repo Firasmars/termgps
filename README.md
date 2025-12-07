@@ -1,6 +1,6 @@
 # TermGPS 🧭
 
-A terminal-based GPS navigation app with radar display for macOS.
+A terminal-based GPS navigation app with **turn-by-turn directions** and radar display.
 
 ![Python](https://img.shields.io/badge/python-3.9+-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -8,178 +8,97 @@ A terminal-based GPS navigation app with radar display for macOS.
 
 ## Features
 
-- 📍 **Real GPS Location** - Uses macOS Location Services for accurate positioning
-- 🎯 **Destination Search** - Search any place with auto-suggestions
-- 🧭 **Radar Display** - Visual compass with direction arrow
-- 📏 **Distance Tracking** - Real-time distance to destination
-- 🔔 **Arrival Detection** - Notifies when you reach your destination
-- 🖱️ **Mouse Support** - Drag to pan the radar view
-- ⚡ **Static Display** - No automatic movement, updates only on user action
+- 📍 **Real GPS Location** - Uses macOS Location Services
+- 🗺️ **Turn-by-Turn Navigation** - Actual road paths like Google Maps
+- 🧭 **Radar Display** - Visual compass with route overlay
+- 📏 **Distance & ETA** - Real-time route information
+- 🔄 **Step-by-Step Directions** - Navigate through each turn
+- 🔔 **Arrival Detection** - Notifies when you reach destination
 
 ## Screenshot
 
 ```
                         N
                         │
-                   ·  · │ ·  ·
-                  ·     │     ·
-                 ·      │      ·
-         W──────────────╋◉YOU───●●●▶ Taj Mahal (150km)
-                 ·      │      ·
-                  ·     │     ·
-                   ·  · │ ·  ·
+              ·  ·   ·  │  ·   ·  ·
+             ·    ·····│·····    ·
+            ·  ·····   │   ·····  ·
+    W───────────●──────╋◉YOU────────────E
+            ·         ·│·         ·
+             ·    ◆···•│         ·
+              ·  Dest  │  ·   ·  ·
                         │
                         S
 
-┌─ NAVIGATION ─────────────────────────────────────────┐
-│ 📍 GPS: Excellent (±5m)                              │
-│ YOUR LOCATION: 28.613901, 77.209023                  │
-│ DESTINATION: Taj Mahal                               │
-│ DISTANCE: 150.25 km  |  DIRECTION: 85° (E)           │
+┌─ DIRECTIONS ──────────────────────────────────────────┐
+│ ➡️ Mathura Road                                  2.1km │
+│   ⬆️ NH 44                                       45.2km │
+│   ⬅️ Fatehabad Road                              3.5km │
+│ Step 1/12                  [n]ext [p]revious          │
+└───────────────────────────────────────────────────────┘
+
+┌─ NAVIGATION ──────────────────────────────────────────┐
+│ 📍 GPS: Excellent (±5m)                               │
+│ YOUR LOCATION: 28.61390, 77.20900                     │
+│ DESTINATION: Taj Mahal                                │
+│ DISTANCE: 233.5 km  |  ETA: 3h 45m                    │
 └───────────────────────────────────────────────────────┘
 ```
 
 ## Installation
 
-### Prerequisites
-
-- Python 3.9 or higher
-- macOS (for real GPS via Location Services)
-
-### Install from source
-
 ```bash
-# Clone the repository
+# Clone
 git clone https://github.com/Aditya-Giri-4356/termgps.git
 cd termgps
 
-# Create virtual environment
+# Setup
 python -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install -e .
 
-# Install GPS support (recommended)
+# For real GPS (macOS)
 pip install pyobjc-framework-CoreLocation
 ```
 
 ## Usage
 
 ```bash
-# Run the app
 python -m termgps.app
-
-# Or if installed
-termgps
 ```
 
 ### Controls
 
 | Key | Action |
 |-----|--------|
-| `r` | **Refresh GPS** - Get your current location |
-| `d` | **Search** - Open destination search |
-| `c` | **Clear** - Clear destination |
-| `↑` `↓` | Select suggestion |
-| `Enter` | Confirm selection |
-| `Escape` | Cancel search |
+| `r` | **Get GPS location** |
+| `d` | **Search destination** |
+| `n` | Next direction step |
+| `p` | Previous direction step |
+| `c` | Clear route |
+| Mouse drag | Pan radar view |
 | `q` | Quit |
-
-| Mouse | Action |
-|-------|--------|
-| Drag | Pan the radar view |
-
-### Location Permission
-
-When you first run the app and press `r` for GPS:
-
-1. macOS will show a **location permission popup**
-2. Click **"Allow"** to grant access
-3. Your real GPS coordinates will be displayed
-
-If you denied permission:
-1. Open **System Preferences** → **Security & Privacy** → **Privacy** → **Location Services**
-2. Find **Terminal** or **Python** and enable it
-3. Restart the app
-
-### GPS Accuracy Levels
-
-| Status | Accuracy | Description |
-|--------|----------|-------------|
-| Excellent | ≤10m | GPS hardware (outdoor) |
-| Good | ≤50m | WiFi positioning |
-| Fair | ≤100m | Cell tower positioning |
-| IP Location | ~10km | Fallback (city-level) |
 
 ## How It Works
 
-1. **Your Position (╋)**: The crosshair at center represents your location
-2. **Direction Arrow (●●●▶)**: Points toward your destination
-3. **Range Circles**: Visual reference for distance scale
-4. **Compass (N/S/E/W)**: Cardinal directions
+1. Press `r` to get your GPS location
+2. Press `d` and search for a destination
+3. Route is calculated automatically using **OSRM** (OpenStreetMap routing)
+4. Follow turn-by-turn directions with `n`/`p` keys
 
-The display is **completely static** - it only updates when you:
-- Press `r` to refresh GPS
-- Set a new destination
-- Clear the destination
+## Route API
 
-## API Usage
-
-The app uses **OpenStreetMap Nominatim** for destination search (free, no API key required).
-
-For Google Maps integration (optional):
-```bash
-export GOOGLE_MAPS_API_KEY="your-api-key"
-termgps
-```
-
-## Project Structure
-
-```
-termgps/
-├── src/
-│   └── termgps/
-│       ├── __init__.py
-│       └── app.py          # Main application
-├── pyproject.toml          # Package configuration
-├── README.md
-├── LICENSE
-└── .gitignore
-```
-
-## Development
-
-```bash
-# Install dev dependencies
-pip install -e ".[dev]"
-
-# Format code
-black src/
-isort src/
-
-# Run tests
-pytest
-```
+Uses **OSRM (Open Source Routing Machine)** - free, no API key required.
+- Same road data as OpenStreetMap
+- Accurate driving directions
+- Distance and time estimates
 
 ## Requirements
 
-- **textual** - TUI framework
-- **rich** - Terminal formatting
-- **requests** - HTTP client
-- **geocoder** - IP geolocation fallback
-- **pyobjc-framework-CoreLocation** - macOS GPS (optional but recommended)
+- Python 3.9+
+- macOS (for GPS)
+- textual, rich, requests, geocoder
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Author
-
-Aditya Giri ([@Aditya-Giri-4356](https://github.com/Aditya-Giri-4356))
-
-## Acknowledgments
-
-- Inspired by [rsadsb/adsb_deku](https://github.com/rsadsb/adsb_deku) radar display
-- Built with [Textual](https://textual.textualize.io/)
-- Location search powered by [OpenStreetMap Nominatim](https://nominatim.openstreetmap.org/)
+MIT

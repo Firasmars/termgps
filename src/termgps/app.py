@@ -4,32 +4,30 @@ TermGPS - Terminal GPS Navigation with Radar Display
 
 FEATURES:
 - Real GPS location using macOS Location Services
-- Static radar display (NO automatic movement)
 - Destination search with auto-suggestions
-- Direction arrow pointing to destination
-- Distance and bearing calculation
-- Arrival notification
+- TURN-BY-TURN NAVIGATION with actual road paths
+- Route display showing all roads to destination
+- Step-by-step directions
+- Distance and ETA calculation
 
 CONTROLS:
 - d: Search destination
 - r: Refresh GPS location
 - c: Clear destination
+- n: Next navigation step
+- p: Previous navigation step
 - Mouse drag: Pan the view
-- Arrow keys: Select suggestion
-- Enter: Confirm selection
-- Escape: Cancel search
 - q: Quit
 """
 
 import os
 import sys
 import math
-import subprocess
-from typing import Optional, Tuple, List, Dict
+from typing import Optional, Tuple, List, Dict, Any
 
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static, Input, Label
-from textual.containers import Container
+from textual.containers import Container, Vertical
 from textual.binding import Binding
 from textual import events
 from rich.text import Text
@@ -37,44 +35,29 @@ from rich.style import Style
 
 
 # =============================================================================
-# GPS LOCATION - Uses macOS Location Services
+# GPS LOCATION
 # =============================================================================
 
 def get_macos_location() -> Tuple[Optional[float], Optional[float], str]:
-    """
-    Get GPS location using macOS CoreLocation.
-    Returns: (latitude, longitude, status_message)
-    """
+    """Get GPS location using macOS CoreLocation."""
     try:
-        # Try using CoreLocation via pyobjc
         import CoreLocation
         from Foundation import NSRunLoop, NSDate
         
         manager = CoreLocation.CLLocationManager.alloc().init()
-        
-        # Check authorization status
         auth_status = CoreLocation.CLLocationManager.authorizationStatus()
         
         if auth_status == CoreLocation.kCLAuthorizationStatusDenied:
-            return None, None, "❌ Location DENIED - Enable in System Preferences > Privacy > Location Services"
+            return None, None, "❌ Location DENIED - Enable in System Preferences"
         
-        if auth_status == CoreLocation.kCLAuthorizationStatusRestricted:
-            return None, None, "⚠️ Location restricted by system"
-        
-        # Request authorization if not determined
         if auth_status == CoreLocation.kCLAuthorizationStatusNotDetermined:
             manager.requestWhenInUseAuthorization()
-            # Wait briefly for user response
             for _ in range(30):
                 NSRunLoop.currentRunLoop().runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.1))
-                if CoreLocation.CLLocationManager.authorizationStatus() != CoreLocation.kCLAuthorizationStatusNotDetermined:
-                    break
         
-        # Start location updates
         manager.setDesiredAccuracy_(CoreLocation.kCLLocationAccuracyBest)
         manager.startUpdatingLocation()
         
-        # Wait for location (up to 10 seconds)
         for _ in range(100):
             NSRunLoop.currentRunLoop().runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.1))
             loc = manager.location()
@@ -88,13 +71,11 @@ def get_macos_location() -> Tuple[Optional[float], Optional[float], str]:
                     return lat, lon, f"📍 GPS: Excellent (±{acc:.0f}m)"
                 elif acc <= 50:
                     return lat, lon, f"📍 GPS: Good (±{acc:.0f}m)"
-                elif acc <= 100:
-                    return lat, lon, f"📍 GPS: Fair (±{acc:.0f}m)"
                 else:
-                    return lat, lon, f"📍 GPS: Low accuracy (±{acc:.0f}m)"
+                    return lat, lon, f"📍 GPS: Fair (±{acc:.0f}m)"
         
         manager.stopUpdatingLocation()
-        return None, None, "⏳ GPS timeout - try again"
+        return get_ip_location()
         
     except ImportError:
         return get_ip_location()
@@ -103,20 +84,72 @@ def get_macos_location() -> Tuple[Optional[float], Optional[float], str]:
 
 
 def get_ip_location() -> Tuple[Optional[float], Optional[float], str]:
-    """Fallback: Get location via IP geolocation."""
+    """Fallback: Get location via IP."""
     try:
         import geocoder
         g = geocoder.ip('me')
         if g.ok:
-            return g.lat, g.lng, "🌐 IP Location (city-level, ~10km accuracy)"
+            return g.lat, g.lng, "🌐 IP Location (~10km accuracy)"
     except:
         pass
     return None, None, "❌ Could not determine location"
 
 
 # =============================================================================
-# DESTINATION SEARCH - Uses OpenStreetMap Nominatim (free, no API key)
+# ROUTING - Uses OSRM (Free, OpenStreetMap-based routing)
 # =============================================================================
+
+def get_route(start_lat: float, start_lon: float, end_lat: float, end_lon: float) -> Optional[Dict]:
+    """
+    Get driving route from OSRM (Open Source Routing Machine).
+    Returns route with geometry, steps, distance, and duration.
+    """
+    try:
+        import requests
+        
+        # OSRM public API (free, no key needed)
+        url = f"https://router.project-osrm.org/route/v1/driving/{start_lon},{start_lat};{end_lon},{end_lat}"
+        params = {
+            "overview": "full",
+            "geometries": "geojson",
+            "steps": "true",
+            "annotations": "true"
+        }
+        
+        response = requests.get(url, params=params, timeout=10)
+        data = response.json()
+        
+        if data.get("code") != "Ok" or not data.get("routes"):
+            return None
+        
+        route = data["routes"][0]
+        
+        # Extract route information
+        result = {
+            "distance": route["distance"] / 1000,  # km
+            "duration": route["duration"] / 60,     # minutes
+            "geometry": route["geometry"]["coordinates"],  # [[lon, lat], ...]
+            "steps": []
+        }
+        
+        # Extract turn-by-turn steps
+        for leg in route.get("legs", []):
+            for step in leg.get("steps", []):
+                maneuver = step.get("maneuver", {})
+                result["steps"].append({
+                    "instruction": step.get("name", "Continue"),
+                    "type": maneuver.get("type", ""),
+                    "modifier": maneuver.get("modifier", ""),
+                    "distance": step.get("distance", 0) / 1000,  # km
+                    "duration": step.get("duration", 0) / 60,    # minutes
+                    "location": maneuver.get("location", [0, 0])  # [lon, lat]
+                })
+        
+        return result
+        
+    except Exception as e:
+        return None
+
 
 def search_places(query: str) -> List[Dict]:
     """Search for places using Nominatim API."""
@@ -127,7 +160,7 @@ def search_places(query: str) -> List[Dict]:
         import requests
         url = "https://nominatim.openstreetmap.org/search"
         params = {"q": query, "format": "json", "limit": 5}
-        headers = {"User-Agent": "TermGPS/1.0 (https://github.com/termgps)"}
+        headers = {"User-Agent": "TermGPS/1.0"}
         response = requests.get(url, params=params, headers=headers, timeout=5)
         
         results = []
@@ -148,7 +181,7 @@ def search_places(query: str) -> List[Dict]:
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate distance between two points in kilometers."""
-    R = 6371  # Earth's radius in km
+    R = 6371
     lat1_rad, lat2_rad = math.radians(lat1), math.radians(lat2)
     delta_lat = math.radians(lat2 - lat1)
     delta_lon = math.radians(lon2 - lon1)
@@ -157,7 +190,7 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
 
 
 def calculate_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Calculate bearing from point 1 to point 2 in degrees (0-360, 0=North)."""
+    """Calculate bearing from point 1 to point 2."""
     lat1_rad, lat2_rad = math.radians(lat1), math.radians(lat2)
     delta_lon = math.radians(lon2 - lon1)
     x = math.sin(delta_lon) * math.cos(lat2_rad)
@@ -172,17 +205,32 @@ def bearing_to_direction(bearing: float) -> str:
     return directions[int((bearing + 11.25) / 22.5) % 16]
 
 
+def get_turn_icon(maneuver_type: str, modifier: str) -> str:
+    """Get icon for turn type."""
+    if maneuver_type == "arrive":
+        return "🏁"
+    elif maneuver_type == "depart":
+        return "🚗"
+    elif "left" in modifier:
+        return "⬅️"
+    elif "right" in modifier:
+        return "➡️"
+    elif "straight" in modifier:
+        return "⬆️"
+    elif maneuver_type == "roundabout":
+        return "🔄"
+    elif maneuver_type == "merge":
+        return "↗️"
+    else:
+        return "➡️"
+
+
 # =============================================================================
 # UI COMPONENTS
 # =============================================================================
 
 class RadarWidget(Static):
-    """
-    Radar display widget.
-    - Shows crosshair at center (your position)
-    - Shows arrow pointing to destination
-    - Supports mouse drag to pan view
-    """
+    """Radar display with route visualization."""
     
     can_focus = True
     
@@ -193,8 +241,10 @@ class RadarWidget(Static):
         self.dest_lat: Optional[float] = None
         self.dest_lon: Optional[float] = None
         self.dest_name: str = ""
+        self.route_points: List[Tuple[float, float]] = []  # [(lat, lon), ...]
         self.pan_x: int = 0
         self.pan_y: int = 0
+        self.zoom: float = 1.0
         self._dragging: bool = False
         self._drag_x: int = 0
         self._drag_y: int = 0
@@ -233,14 +283,30 @@ class RadarWidget(Static):
         self.dest_lon = lon
         self.dest_name = name
     
+    def set_route(self, route_points: List[Tuple[float, float]]) -> None:
+        """Set the route path to display."""
+        self.route_points = route_points
+    
     def clear_destination(self) -> None:
         self.dest_lat = None
         self.dest_lon = None
         self.dest_name = ""
+        self.route_points = []
     
-    def reset_pan(self) -> None:
-        self.pan_x = 0
-        self.pan_y = 0
+    def _latlon_to_screen(self, lat: float, lon: float, center_lat: float, center_lon: float) -> Tuple[int, int]:
+        """Convert lat/lon to screen coordinates."""
+        # Scale factor (degrees to screen units)
+        scale = 500 * self.zoom
+        
+        # Center of screen
+        cx = self._width // 2 + self.pan_x
+        cy = self._height // 2 + self.pan_y
+        
+        # Convert to screen coordinates
+        x = cx + int((lon - center_lon) * scale)
+        y = cy - int((lat - center_lat) * scale * 2)  # *2 for aspect ratio
+        
+        return x, y
     
     def render(self) -> Text:
         text = Text()
@@ -253,15 +319,37 @@ class RadarWidget(Static):
         cx = max(3, min(w - 3, cx))
         cy = max(2, min(h - 2, cy))
         
-        # Draw range circles
+        # Draw route path if available
+        if self.route_points and self.my_lat and self.my_lon:
+            prev_x, prev_y = None, None
+            for i, (lon, lat) in enumerate(self.route_points):
+                x, y = self._latlon_to_screen(lat, lon, self.my_lat, self.my_lon)
+                
+                # Draw route point
+                if 0 <= x < w and 0 <= y < h:
+                    # Use different characters for the route
+                    if i == 0:
+                        buffer[y][x] = '●'  # Start
+                    elif i == len(self.route_points) - 1:
+                        buffer[y][x] = '◆'  # End (destination)
+                    else:
+                        buffer[y][x] = '·'  # Route path
+                
+                # Draw line between points
+                if prev_x is not None and prev_y is not None:
+                    self._draw_line(buffer, prev_x, prev_y, x, y, '·')
+                
+                prev_x, prev_y = x, y
+        
+        # Draw range circles around my position
         for radius in [4, 8, 12]:
-            for angle in range(0, 360, 8):
+            for angle in range(0, 360, 10):
                 x = int(cx + radius * math.cos(math.radians(angle)))
                 y = int(cy - radius * math.sin(math.radians(angle)) * 0.5)
-                if 0 <= x < w and 0 <= y < h:
+                if 0 <= x < w and 0 <= y < h and buffer[y][x] == ' ':
                     buffer[y][x] = '·'
         
-        # Draw crosshairs (YOUR position)
+        # Draw crosshairs
         for x in range(w):
             if 0 <= cy < h and buffer[cy][x] == ' ':
                 buffer[cy][x] = '─'
@@ -273,10 +361,8 @@ class RadarWidget(Static):
         
         # Draw compass points
         if 0 <= cx < w:
-            if cy > 0:
-                buffer[0][cx] = 'N'
-            if cy < h - 1:
-                buffer[h - 1][cx] = 'S'
+            if cy > 0: buffer[0][cx] = 'N'
+            if cy < h - 1: buffer[h - 1][cx] = 'S'
         if 0 <= cy < h:
             buffer[cy][0] = 'W'
             buffer[cy][w - 1] = 'E'
@@ -288,31 +374,24 @@ class RadarWidget(Static):
                 if 0 <= cx + 2 + i < w and 0 <= cy < h:
                     buffer[cy][cx + 2 + i] = c
         
-        # Draw destination arrow
+        # Draw destination marker and arrow
         if self.dest_lat and self.dest_lon and self.my_lat and self.my_lon:
             bearing = calculate_bearing(self.my_lat, self.my_lon, self.dest_lat, self.dest_lon)
             distance = haversine_distance(self.my_lat, self.my_lon, self.dest_lat, self.dest_lon)
             
-            arrow_len = min(8, min(cx, w - cx, cy, h - cy) - 2)
+            # Draw arrow indicating direction
+            arrow_len = min(6, min(cx, w - cx, cy, h - cy) - 2)
             if arrow_len > 2:
                 angle_rad = math.radians(bearing)
-                
-                # Draw arrow line
-                for i in range(2, arrow_len):
-                    ax = int(cx + i * math.sin(angle_rad))
-                    ay = int(cy - i * math.cos(angle_rad) * 0.5)
-                    if 0 <= ax < w and 0 <= ay < h:
-                        buffer[ay][ax] = '●'
-                
-                # Draw arrow head
                 end_x = int(cx + arrow_len * math.sin(angle_rad))
                 end_y = int(cy - arrow_len * math.cos(angle_rad) * 0.5)
+                
                 arrows = ['▲', '◥', '▶', '◢', '▼', '◣', '◀', '◤']
                 arrow_char = arrows[int((bearing + 22.5) / 45) % 8]
                 if 0 <= end_x < w and 0 <= end_y < h:
                     buffer[end_y][end_x] = arrow_char
                 
-                # Draw destination label
+                # Destination label
                 dist_str = f"{distance:.1f}km" if distance >= 1 else f"{int(distance * 1000)}m"
                 label = f" {self.dest_name[:8]} ({dist_str})"
                 label_x = min(end_x + 1, w - len(label))
@@ -321,9 +400,112 @@ class RadarWidget(Static):
                         if 0 <= label_x + i < w:
                             buffer[end_y][label_x + i] = c
         
+        # Route indicator
+        if self.route_points:
+            label = f"📍 Route: {len(self.route_points)} points"
+            for i, c in enumerate(label):
+                if 0 <= i < w and 0 <= 1 < h:
+                    buffer[1][i] = c
+        
         # Convert to Rich Text
         for row in buffer:
             text.append(''.join(row) + '\n', style=Style(color="green"))
+        
+        return text
+    
+    def _draw_line(self, buffer: List[List[str]], x1: int, y1: int, x2: int, y2: int, char: str) -> None:
+        """Draw a line between two points using Bresenham's algorithm."""
+        dx = abs(x2 - x1)
+        dy = abs(y2 - y1)
+        sx = 1 if x1 < x2 else -1
+        sy = 1 if y1 < y2 else -1
+        err = dx - dy
+        
+        w, h = len(buffer[0]), len(buffer)
+        steps = 0
+        max_steps = max(dx, dy) + 1
+        
+        while steps < max_steps:
+            if 0 <= x1 < w and 0 <= y1 < h and buffer[y1][x1] == ' ':
+                buffer[y1][x1] = char
+            
+            if x1 == x2 and y1 == y2:
+                break
+            
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x1 += sx
+            if e2 < dx:
+                err += dx
+                y1 += sy
+            
+            steps += 1
+
+
+class DirectionsWidget(Static):
+    """Shows turn-by-turn directions."""
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.steps: List[Dict] = []
+        self.current_step: int = 0
+    
+    def set_steps(self, steps: List[Dict]) -> None:
+        self.steps = steps
+        self.current_step = 0
+    
+    def next_step(self) -> None:
+        if self.steps and self.current_step < len(self.steps) - 1:
+            self.current_step += 1
+    
+    def prev_step(self) -> None:
+        if self.steps and self.current_step > 0:
+            self.current_step -= 1
+    
+    def clear(self) -> None:
+        self.steps = []
+        self.current_step = 0
+    
+    def render(self) -> Text:
+        text = Text()
+        
+        if not self.steps:
+            text.append("No route loaded. Press 'd' to search destination.\n", style=Style(color="grey50"))
+            return text
+        
+        text.append("┌─ DIRECTIONS ──────────────────────────────────────────┐\n", style=Style(color="cyan"))
+        
+        # Show current step prominently
+        if 0 <= self.current_step < len(self.steps):
+            step = self.steps[self.current_step]
+            icon = get_turn_icon(step["type"], step["modifier"])
+            instruction = step["instruction"] or "Continue"
+            dist = step["distance"]
+            dist_str = f"{dist:.1f}km" if dist >= 1 else f"{int(dist * 1000)}m"
+            
+            text.append(f"│ {icon} ", style=Style(color="yellow", bold=True))
+            text.append(f"{instruction[:40]:<40}", style=Style(color="white", bold=True))
+            text.append(f" {dist_str:>6} │\n", style=Style(color="green"))
+        
+        # Show next 2 steps
+        for i in range(self.current_step + 1, min(self.current_step + 3, len(self.steps))):
+            step = self.steps[i]
+            icon = get_turn_icon(step["type"], step["modifier"])
+            instruction = step["instruction"] or "Continue"
+            dist = step["distance"]
+            dist_str = f"{dist:.1f}km" if dist >= 1 else f"{int(dist * 1000)}m"
+            
+            text.append(f"│   {icon} {instruction[:38]:<38} {dist_str:>6} │\n", style=Style(color="grey70"))
+        
+        # Pad if needed
+        displayed = min(3, len(self.steps) - self.current_step)
+        for _ in range(3 - displayed):
+            text.append(f"│{'':<55}│\n", style=Style(color="cyan"))
+        
+        text.append(f"│ Step {self.current_step + 1}/{len(self.steps):<5} ", style=Style(color="cyan"))
+        text.append(f"{'[n]ext [p]revious':<35} │\n", style=Style(color="grey50"))
+        text.append("└───────────────────────────────────────────────────────┘\n", style=Style(color="cyan"))
         
         return text
 
@@ -365,12 +547,11 @@ class SuggestionsWidget(Static):
             else:
                 text.append(f"│   {name:<52} │\n", style=Style(color="white"))
         text.append("└───────────────────────────────────────────────────────┘\n", style=Style(color="yellow"))
-        text.append("  ↑↓ Select  |  Enter Confirm  |  Esc Cancel\n", style=Style(color="cyan", dim=True))
         return text
 
 
 class InfoWidget(Static):
-    """Shows navigation information."""
+    """Shows route summary information."""
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -378,59 +559,53 @@ class InfoWidget(Static):
         self.my_lat: Optional[float] = None
         self.my_lon: Optional[float] = None
         self.dest_name: Optional[str] = None
-        self.distance: float = 0
-        self.bearing: float = 0
+        self.route_distance: float = 0
+        self.route_duration: float = 0
     
-    def update_info(
-        self,
-        gps_status: str,
-        my_lat: Optional[float],
-        my_lon: Optional[float],
-        dest_name: Optional[str],
-        distance: float,
-        bearing: float
-    ) -> None:
+    def update_info(self, gps_status: str, lat: Optional[float], lon: Optional[float],
+                    dest_name: Optional[str], distance: float, duration: float) -> None:
         self.gps_status = gps_status
-        self.my_lat = my_lat
-        self.my_lon = my_lon
+        self.my_lat = lat
+        self.my_lon = lon
         self.dest_name = dest_name
-        self.distance = distance
-        self.bearing = bearing
+        self.route_distance = distance
+        self.route_duration = duration
     
     def render(self) -> Text:
         text = Text()
         
-        text.append("┌─ NAVIGATION ─────────────────────────────────────────┐\n", style=Style(color="green"))
+        text.append("┌─ NAVIGATION ──────────────────────────────────────────┐\n", style=Style(color="green"))
         
         # GPS Status
-        if "Excellent" in self.gps_status or "Good" in self.gps_status:
-            text.append(f"│ {self.gps_status:<53} │\n", style=Style(color="green", bold=True))
-        elif "Fair" in self.gps_status or "IP" in self.gps_status:
-            text.append(f"│ {self.gps_status:<53} │\n", style=Style(color="yellow"))
-        else:
-            text.append(f"│ {self.gps_status:<53} │\n", style=Style(color="cyan"))
+        text.append(f"│ {self.gps_status:<54} │\n", style=Style(color="cyan"))
         
-        # My Location
-        if self.my_lat is not None and self.my_lon is not None:
-            loc_str = f"YOUR LOCATION: {self.my_lat:.6f}, {self.my_lon:.6f}"
-            text.append(f"│ {loc_str:<53} │\n", style=Style(color="white"))
+        # Location
+        if self.my_lat is not None:
+            loc = f"YOUR LOCATION: {self.my_lat:.5f}, {self.my_lon:.5f}"
+            text.append(f"│ {loc:<54} │\n", style=Style(color="white"))
         else:
-            text.append(f"│ {'YOUR LOCATION: Unknown':<53} │\n", style=Style(color="yellow"))
+            text.append(f"│ {'YOUR LOCATION: Unknown (press r)':<54} │\n", style=Style(color="yellow"))
         
-        # Destination
-        if self.dest_name:
-            text.append(f"│ DESTINATION: {self.dest_name[:40]:<40} │\n", style=Style(color="white"))
+        # Destination & Route
+        if self.dest_name and self.route_distance > 0:
+            text.append(f"│ DESTINATION: {self.dest_name[:41]:<41} │\n", style=Style(color="white"))
             
-            dist_str = f"{self.distance:.2f} km" if self.distance >= 1 else f"{int(self.distance * 1000)} m"
-            dir_str = bearing_to_direction(self.bearing)
-            nav_str = f"DISTANCE: {dist_str}  |  DIRECTION: {self.bearing:.0f}° ({dir_str})"
-            text.append(f"│ {nav_str:<53} │\n", style=Style(color="green"))
+            # Format duration
+            hours = int(self.route_duration // 60)
+            mins = int(self.route_duration % 60)
+            if hours > 0:
+                time_str = f"{hours}h {mins}m"
+            else:
+                time_str = f"{mins} min"
             
-            if self.distance < 0.1:
-                text.append(f"│ {'🎉 YOU HAVE ARRIVED! 🎉':^53} │\n", style=Style(color="yellow", bold=True))
+            route_info = f"DISTANCE: {self.route_distance:.1f} km  |  ETA: {time_str}"
+            text.append(f"│ {route_info:<54} │\n", style=Style(color="green"))
+        elif self.dest_name:
+            text.append(f"│ DESTINATION: {self.dest_name[:41]:<41} │\n", style=Style(color="white"))
+            text.append(f"│ {'Loading route...':<54} │\n", style=Style(color="yellow"))
         else:
-            text.append(f"│ {'DESTINATION: Not set (press d to search)':<53} │\n", style=Style(color="grey50"))
-            text.append(f"│ {'':<53} │\n", style=Style(color="green"))
+            text.append(f"│ {'DESTINATION: Not set (press d)':<54} │\n", style=Style(color="grey50"))
+            text.append(f"│ {'':<54} │\n", style=Style(color="green"))
         
         text.append("└───────────────────────────────────────────────────────┘\n", style=Style(color="green"))
         
@@ -442,24 +617,16 @@ class InfoWidget(Static):
 # =============================================================================
 
 class TermGPSApp(App):
-    """
-    TermGPS - Terminal GPS Navigation Application
+    """TermGPS with turn-by-turn navigation."""
     
-    NO AUTOMATIC MOVEMENT - display only updates on user action.
-    """
-    
-    TITLE = "TermGPS"
+    TITLE = "TermGPS - Navigation"
     
     CSS = """
-    Screen {
-        background: #000000;
-    }
+    Screen { background: #000000; }
     
-    #radar-container {
-        height: 55%;
-        border: heavy green;
-        background: #000000;
-    }
+    #radar-container { height: 45%; border: heavy green; }
+    #directions-panel { height: 25%; padding: 0 1; }
+    #info-panel { height: 15%; padding: 0 1; }
     
     #search-box {
         display: none;
@@ -468,10 +635,7 @@ class TermGPSApp(App):
         background: #111100;
         padding: 1;
     }
-    
-    #search-box.visible {
-        display: block;
-    }
+    #search-box.visible { display: block; }
     
     #search-input {
         width: 100%;
@@ -480,29 +644,18 @@ class TermGPSApp(App):
         border: solid green;
     }
     
-    #info-panel {
-        height: auto;
-        padding: 0 1;
-    }
-    
-    Static {
-        color: #00ff00;
-    }
-    
-    Footer {
-        background: #001100;
-    }
-    
-    Header {
-        background: #001100;
-    }
+    Static { color: #00ff00; }
+    Footer { background: #001100; }
+    Header { background: #001100; }
     """
     
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("d", "open_search", "Search"),
         Binding("r", "refresh_gps", "GPS"),
-        Binding("c", "clear_dest", "Clear"),
+        Binding("c", "clear_route", "Clear"),
+        Binding("n", "next_step", "Next"),
+        Binding("p", "prev_step", "Prev"),
         Binding("escape", "close_search", "Cancel", show=False),
         Binding("enter", "confirm_search", "OK", show=False),
         Binding("up", "move_up", "↑", show=False),
@@ -511,13 +664,13 @@ class TermGPSApp(App):
     
     def __init__(self):
         super().__init__()
-        # State
         self.my_lat: Optional[float] = None
         self.my_lon: Optional[float] = None
-        self.gps_status: str = "Press 'r' to get your GPS location"
+        self.gps_status: str = "Press 'r' for GPS"
         self.dest_lat: Optional[float] = None
         self.dest_lon: Optional[float] = None
         self.dest_name: Optional[str] = None
+        self.route: Optional[Dict] = None
         self.search_active: bool = False
         self._last_query: str = ""
     
@@ -525,12 +678,10 @@ class TermGPSApp(App):
         yield Header(show_clock=True)
         
         self.radar = RadarWidget(id="radar")
+        self.directions = DirectionsWidget(id="directions-panel")
         self.suggestions = SuggestionsWidget(id="suggestions")
         self.info = InfoWidget(id="info-panel")
-        self.search_input = Input(
-            placeholder="Type destination (e.g., 'Taj Mahal', 'Mumbai Airport')...",
-            id="search-input"
-        )
+        self.search_input = Input(placeholder="Type destination...", id="search-input")
         
         with Container(id="search-box"):
             yield Label("🔍 Search Destination:")
@@ -540,50 +691,52 @@ class TermGPSApp(App):
         with Container(id="radar-container"):
             yield self.radar
         
+        yield self.directions
         yield self.info
         yield Footer()
     
     def on_mount(self) -> None:
-        """Called when app starts - NO automatic updates."""
         self._refresh_display()
         self.notify("Press 'r' for GPS, 'd' to search destination")
     
     def _refresh_display(self) -> None:
-        """Refresh all displays with current data."""
-        distance = 0.0
-        bearing = 0.0
-        
-        if self.my_lat and self.dest_lat:
-            distance = haversine_distance(self.my_lat, self.my_lon, self.dest_lat, self.dest_lon)
-            bearing = calculate_bearing(self.my_lat, self.my_lon, self.dest_lat, self.dest_lon)
-        
+        """Refresh all displays."""
         self.radar.set_my_position(self.my_lat, self.my_lon)
+        
         if self.dest_lat:
             self.radar.set_destination(self.dest_lat, self.dest_lon, self.dest_name or "")
         
-        self.info.update_info(
-            self.gps_status,
-            self.my_lat, self.my_lon,
-            self.dest_name,
-            distance, bearing
-        )
+        if self.route:
+            self.radar.set_route(self.route["geometry"])
+            self.directions.set_steps(self.route["steps"])
+            self.info.update_info(
+                self.gps_status, self.my_lat, self.my_lon,
+                self.dest_name, self.route["distance"], self.route["duration"]
+            )
+        else:
+            self.info.update_info(
+                self.gps_status, self.my_lat, self.my_lon,
+                self.dest_name, 0, 0
+            )
         
         self.radar.refresh()
+        self.directions.refresh()
         self.info.refresh()
     
-    # === ACTIONS ===
-    
     def action_refresh_gps(self) -> None:
-        """Get GPS location - only when user presses 'r'."""
+        """Get GPS location."""
         self.notify("📍 Getting GPS location...")
         self.my_lat, self.my_lon, self.gps_status = get_macos_location()
         self._refresh_display()
         
         if self.my_lat:
             self.notify(f"Location: {self.my_lat:.4f}, {self.my_lon:.4f}")
+            
+            # Recalculate route if destination exists
+            if self.dest_lat:
+                self._calculate_route()
     
     def action_open_search(self) -> None:
-        """Open search box."""
         self.search_active = True
         self.query_one("#search-box").add_class("visible")
         self.search_input.value = ""
@@ -591,34 +744,58 @@ class TermGPSApp(App):
         self.search_input.focus()
     
     def action_close_search(self) -> None:
-        """Close search box."""
         self.search_active = False
         self.query_one("#search-box").remove_class("visible")
         self.suggestions.clear()
         self.radar.focus()
     
     def action_confirm_search(self) -> None:
-        """Confirm search selection."""
         if self.search_active:
             selected = self.suggestions.get_selected()
             if selected:
                 self.dest_lat = selected["lat"]
                 self.dest_lon = selected["lon"]
-                self.dest_name = selected["name"].split(",")[0][:20]
-                self.radar.set_destination(self.dest_lat, self.dest_lon, self.dest_name)
-                self._refresh_display()
+                self.dest_name = selected["name"].split(",")[0][:25]
+                
                 self.notify(f"📍 Destination: {self.dest_name}")
+                self._calculate_route()
             
             self.action_close_search()
     
-    def action_clear_dest(self) -> None:
-        """Clear destination."""
+    def _calculate_route(self) -> None:
+        """Calculate route to destination."""
+        if not self.my_lat or not self.dest_lat:
+            return
+        
+        self.notify("🗺️ Calculating route...")
+        self.route = get_route(self.my_lat, self.my_lon, self.dest_lat, self.dest_lon)
+        
+        if self.route:
+            steps = len(self.route["steps"])
+            dist = self.route["distance"]
+            self.notify(f"✅ Route found: {dist:.1f}km, {steps} turns")
+        else:
+            self.notify("❌ Could not calculate route", severity="error")
+        
+        self._refresh_display()
+    
+    def action_clear_route(self) -> None:
         self.dest_lat = None
         self.dest_lon = None
         self.dest_name = None
+        self.route = None
         self.radar.clear_destination()
+        self.directions.clear()
         self._refresh_display()
-        self.notify("Destination cleared")
+        self.notify("Route cleared")
+    
+    def action_next_step(self) -> None:
+        self.directions.next_step()
+        self.directions.refresh()
+    
+    def action_prev_step(self) -> None:
+        self.directions.prev_step()
+        self.directions.refresh()
     
     def action_move_up(self) -> None:
         if self.search_active:
@@ -630,10 +807,7 @@ class TermGPSApp(App):
             self.suggestions.move_selection(1)
             self.suggestions.refresh()
     
-    # === INPUT HANDLING ===
-    
     def on_input_changed(self, event: Input.Changed) -> None:
-        """Search as user types."""
         if event.input.id == "search-input":
             query = event.value.strip()
             if len(query) >= 3 and query != self._last_query:
@@ -643,27 +817,23 @@ class TermGPSApp(App):
                 self.suggestions.refresh()
     
     def on_input_submitted(self, event: Input.Submitted) -> None:
-        """Handle Enter in search box."""
         if event.input.id == "search-input":
             self.action_confirm_search()
 
 
-# =============================================================================
-# ENTRY POINT
-# =============================================================================
-
 def run():
-    """Run the TermGPS application."""
-    print("\n" + "=" * 50)
-    print("  TermGPS - Terminal GPS Navigation")
-    print("=" * 50)
+    """Run TermGPS."""
+    print("\n" + "=" * 60)
+    print("  TermGPS - Turn-by-Turn Navigation")
+    print("=" * 60)
     print("\nControls:")
     print("  r = Get GPS location")
     print("  d = Search destination")
-    print("  c = Clear destination")
+    print("  n/p = Next/Previous step")
+    print("  c = Clear route")
     print("  Mouse drag = Pan view")
     print("  q = Quit")
-    print("\n" + "=" * 50 + "\n")
+    print("\n" + "=" * 60 + "\n")
     
     app = TermGPSApp()
     app.run()
