@@ -341,20 +341,20 @@ class TermGPS(App):
         s = self.route["steps"][self.cur]
         if dist_m(self.lat, self.lon, s["loc"][1], s["loc"][0]) < 50:
             if self.cur < len(self.route["steps"])-1:
-                self.cur += 1; self.notify(f"🔔 {self.route['steps'][self.cur]['name']}")
+                self.cur += 1; self.notify(f"🔔 {self.route['steps'][self.cur]['name']}", timeout=2)
             else:
-                self.notify("🏁 Arrived!"); self.tracking = False
+                self.notify("🏁 Arrived!", timeout=3); self.tracking = False
                 if self._timer: self._timer.stop()
     
     def action_gps(self):
-        self.notify("📍..."); self.lat, self.lon, self.info.acc = get_gps(); self._refresh(); self._check()
+        self.notify("📍...", timeout=1); self.lat, self.lon, self.info.acc = get_gps(); self._refresh(); self._check()
     
     def action_track(self):
         self.tracking = not self.tracking
-        if self.tracking: self._timer = self.set_interval(5, self._tick); self.notify("🔄 ON")
+        if self.tracking: self._timer = self.set_interval(5, self._tick); self.notify("🔄 ON", timeout=1)
         else:
             if self._timer: self._timer.stop(); self._timer = None
-            self.notify("⏹ OFF")
+            self.notify("⏹ OFF", timeout=1)
         self._refresh()
     
     def _tick(self):
@@ -371,9 +371,9 @@ class TermGPS(App):
             self.action_cancel(); self._calc(s["lat"], s["lon"])
     
     def _calc(self, dlat, dlon):
-        if not self.lat: self.notify("⚠ Get GPS first"); return
-        self.notify("🗺️..."); self.route = get_route(self.lat, self.lon, dlat, dlon); self.cur = 0
-        if self.route: self.notify(f"✅ {fmt_d(self.route['dist'])}")
+        if not self.lat: self.notify("⚠ Get GPS first", timeout=2); return
+        self.notify("🗺️...", timeout=1); self.route = get_route(self.lat, self.lon, dlat, dlon); self.cur = 0
+        if self.route: self.notify(f"✅ {fmt_d(self.route['dist'])}", timeout=2)
         self._refresh()
     
     def action_clear(self):
