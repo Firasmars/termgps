@@ -1,8 +1,8 @@
 # TermGPS 🧭
 
-**Terminal-based GPS Navigation with Turn-by-Turn Directions**
+**Terminal-based turn-by-turn navigation with a live Co-Pilot.**
 
-A cross-platform terminal navigation app with radar display, route visualization, and real-time tracking.
+A high-performance, cross-platform terminal GPS app featuring real-time tracking, a smart co-pilot, visual signal meters, and theme support.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue?logo=python)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
@@ -12,47 +12,45 @@ A cross-platform terminal navigation app with radar display, route visualization
 
 ## ✨ Features
 
-- 📍 **GPS Location** - Real GPS on macOS, IP-based fallback everywhere
-- 🗺️ **Turn-by-Turn Navigation** - Step-by-step directions with distance
-- 🧭 **Radar Display** - Visual map with route and direction arrow
-- 🔵 **Route Visualization** - Blue route line from start to destination
-- 🔴 **Direction Arrow** - Points from your location toward destination
-- 🔄 **Live Tracking** - Auto-updates GPS every 5 seconds
-- 🎨 **Programmer-Focused Themes** - VS Code, GitHub, One Dark, Solarized, Monokai Pro, Night Owl
-- 🎛️ **Easy Theme Switching** - Press `T` to enter theme mode, then use `←`/`→` to cycle
-- 🇮🇳 **India Optimized** - Built-in Indian cities, Tamil Nadu focus
+- **🗣️ Live Co-Pilot** - Friendly commentary guiding your journey ("Turn coming up!", "Long stretch ahead").
+- **🏃 Movement Detection** - Detects if you are moving or stationary with real-time speed (km/h).
+- **📶 Signal Meter** - Visual bars (`▂▃▅▆▇`) showing GPS accuracy/strength.
+- **🗺️ Radar Map** - Live radar with blue route line, red markers, and direction arrows.
+- **🧭 Turn-by-Turn** - Step-by-step navigation list with auto-advance.
+- **🎨 6 Programmer Themes** - Matrix, Dracula, Monokai, Nord, Gruvbox, Solarized.
+- **🌍 Cross-Platform** - Works on macOS (Native GPS), Windows/Linux (IP Geolocation fallback).
 
 ---
 
-## 📸 Screenshot
+## 📸 Interface
 
 ```
 ┌─ NEXT TURN ─┐ ┌────────────────────────────────────────────────┐
 │             │ │              N                                 │
-│   ⬅  500m   │ │              │                                 │
+│   ⬅  250m   │ │              │                                 │
 │             │ │     ·    ·   │   ·    ·                        │
 │  Main Road  │ │    ·         │     ●●●▶                        │
-│  Step 1/5   │ │   W──────────╋ ◉ YOU──━━━━━◆──E                │
+│  Step 2/15  │ │   W──────────╋ ◉ YOU──━━━━━◆──E                │
 ├─ UPCOMING ──┤ │    ·         │         ·                       │
 │ ⬅ Main Rd  │  │     ·    ·   │   ·    ·                        │
 │ ➡ NH 44    │  │              S                                 │
-│ ⬆ Continue │  │                                                │
-├─ INFO ──────┤ │                MAP                             │
-│ GPS: 13.08  │ │                                                │
-│ TO: Chennai │ └────────────────────────────────────────────────┘
-│ 🔄 TRACKING │
+├─ INFO ──────┤ │                                                │
+│ SIG: ▂▃▅▆▇  │ │                MAP                             │
+│ LOC: 13.08..│ │                                                │
+│ 🔄 TRACKING │ └────────────────────────────────────────────────┘
 ├─ THEME ─────┤
-│ [matrix]    │
+│ [Dracula]   │
+├─ CO-PILOT ──┤
+│ STATUS: MOVING (45 km/h)
+│ 💬 Prepare to turn left 
+│    in a few seconds!
+│ ETA: 12 min
 └─────────────┘
 ```
 
 ---
 
 ## 🚀 Installation
-
-### Requirements
-- Python 3.9+
-- Internet connection (for routing)
 
 ### Quick Install
 
@@ -61,32 +59,15 @@ A cross-platform terminal navigation app with radar display, route visualization
 git clone https://github.com/Aditya-Giri-4356/termgps.git
 cd termgps
 
-# Install dependencies
-pip install textual rich requests
-
-# Run
-python -m src.termgps.app
-```
-
-### Full Install (with GPS support)
-
-```bash
-# Clone
-git clone https://github.com/Aditya-Giri-4356/termgps.git
-cd termgps
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install package
+# Install
 pip install -e .
 
 # Run
 termgps
 ```
 
-### Optional: Real GPS (macOS only)
+### Optional: Real GPS (macOS)
+For native GPS support on macOS:
 ```bash
 pip install pyobjc-framework-CoreLocation
 ```
@@ -97,113 +78,58 @@ pip install pyobjc-framework-CoreLocation
 
 | Key | Action |
 |-----|--------|
-| `r` | Get GPS location |
-| `x` | Toggle live tracking (every 5s) |
+| `r` | Refresh GPS location |
+| `x` | Toggle **Live Tracking** |
 | `d` | Search destination |
-| `n` | Next navigation step |
-| `p` | Previous navigation step |
-| `c` | Clear route |
-| `t` | Enter/Exit Theme Mode (use ⬅️/➡️ to change) |
-| `q` | Quit |
+| `t` | Toggle **Theme Mode** (Use `⬅`/`➡` to switch) |
+| `n` | Next turn (Manual override) |
+| `p` | Previous turn |
+| `c` | Clear current route |
+| `q` | Quit application |
 
-| Mouse | Action |
-|-------|--------|
-| Drag | Pan the map |
-
----
-
-## 🎨 Themes (Programmer Focused)
-
-Press `t` to enter theme mode, then use Arrow Keys to switch:
-
-- **Matrix** (Green/Black) - The classic hacker vibe.
-- **Dracula** (Pink/Purple) - Popular IDE theme.
-- **Monokai** (Yellow/Pink) - Vibrant and high contrast.
-- **Nord** (Ice Blue) - Cool and easy on the eyes.
-- **Gruvbox** (Retro) - Warm, reddish-brown tones.
-- **Solarized** (Cyan/Yellow) - Precision colors.
+| Key | Theme Mode Active |
+|-----|-------------------|
+| `⬅` | Previous Theme |
+| `➡` | Next Theme |
 
 ---
 
-## 🤝 Contributions
+## 🎨 Themes
 
-**Extra features are always appreciated!** If you have an idea or improvement, feel free to open a pull request or issue. We love seeing community creativity. 🚀
+Press `t` to enter selection mode, then cycle through:
 
----
-
-## 🗺️ Map Legend
-
-| Symbol | Color | Meaning |
-|--------|-------|---------|
-| `╋` | Red | Your location (center) |
-| `◉ YOU` | Yellow | Your position label |
-| `●●●▶` | Magenta→Red | Direction to destination |
-| `━━━` | Blue | Route path |
-| `◆` | Red | Destination |
-| `▼` | Red | Next turn |
-| `N S E W` | White | Compass |
+- **Matrix** (Green/Black)
+- **Dracula** (Pink/Purple)
+- **Monokai** (Yellow/Pink)
+- **Nord** (Ice Blue)
+- **Gruvbox** (Retro Brown)
+- **Solarized** (Cyan/Beige)
 
 ---
 
-## 🌍 Cross-Platform Support
-
-| Platform | GPS Method | Notes |
-|----------|------------|-------|
-| **macOS** | CoreLocation | Real GPS (requires permission) |
-| **Windows** | IP Geolocation | ~10km accuracy |
-| **Linux** | IP Geolocation | ~10km accuracy |
-
-On all platforms, IP geolocation provides city-level accuracy (~10km).
-
----
-
-## 📡 APIs Used
-
-- **Routing**: [OSRM](https://project-osrm.org/) - Free, OpenStreetMap-based
-- **Search**: [Nominatim](https://nominatim.openstreetmap.org/) - Free, no API key
-- **IP Location**: [IP-API](http://ip-api.com/) - Free
-
-No API keys required!
-
----
-
-## 📁 Project Structure
+## 🛠️ Project Structure
 
 ```
 termgps/
 ├── src/
 │   └── termgps/
 │       ├── __init__.py
-│       └── app.py          # Main application
-├── pyproject.toml          # Package config
-├── README.md
-├── LICENSE
+│       └── app.py          # Main application logic
+├── pyproject.toml          # Project configuration
+├── README.md               # Documentation
+├── LICENSE                 # MIT License
 └── .gitignore
 ```
 
 ---
 
-## 🛠️ Development
+## 🤝 Contributions
 
-```bash
-# Clone and setup
-git clone https://github.com/Aditya-Giri-4356/termgps.git
-cd termgps
-python -m venv venv
-source venv/bin/activate
-pip install -e .
-
-# Run in development
-python -m src.termgps.app
-```
+Contributions are welcome! If you have ideas for new features (like voice support, offline maps, etc.), please open an issue or pull request.
 
 ---
 
-## 🤝 Contributing
-
-Contributions are always welcome! If you have any ideas, suggestions, or bug reports, please open an issue or submit a pull request. Extra features and improvements are always appreciated!
-
-## 📝 License
+## 📄 License
 
 MIT License - see [LICENSE](LICENSE)
 
@@ -212,11 +138,3 @@ MIT License - see [LICENSE](LICENSE)
 ## 👨‍💻 Author
 
 **Aditya Giri** - [@Aditya-Giri-4356](https://github.com/Aditya-Giri-4356)
-
----
-
-## 🙏 Acknowledgments
-
-- [Textual](https://textual.textualize.io/) - TUI framework
-- [OSRM](https://project-osrm.org/) - Routing engine
-- [OpenStreetMap](https://www.openstreetmap.org/) - Map data
